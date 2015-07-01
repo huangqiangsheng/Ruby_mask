@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description>Get PCell parameters</description>
+ <version/>
+ <category/>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>true</show-in-menu>
+ <group-name/>
+ <menu-path>trt_menu.cells_submenu.end</menu-path>
+ <interpreter>ruby</interpreter>
+ <dsl-interpreter-name/>
+ <text>## Get PCell parameters.lym
+## By davidnhutch
+## 
+## Gets parameter list from a PCell. 
+## Knowing the parameters of a PCell is important for example when you are calling 
+## the PCell from another script. 
+
+include RBA
+
+# Old input method:
+# input = InputDialog.ask_string("Get PCell parameters","Input the library and cell names, e.g. LibName.CELL_NAME","Basic.TEXT")
+
+# New input method:
+dialog = QDialog.new(Application.instance.main_window);
+dialog.windowTitle = "Get PCell parameters";
+qt_layout = QVBoxLayout::new(dialog);
+dialog.setLayout(qt_layout);
+# Get the list of libs
+libs = []
+Library.library_names.each { |lib| libs &lt;&lt; lib }
+# Make a hash where key,val is libraryname,[arr of pcell names]
+lib_pcells_hash = Hash.new
+libs.each { |lib|      
+  i=0
+  pcell_names = []      
+  loop do
+    pcd = Library.library_by_name(lib).layout.pcell_declaration(i)
+    break if pcd.nil?
+    pcell_names &lt;&lt; pcd.name
+    i += 1
+  end
+  lib_pcells_hash.store(lib,pcell_names)
+}
+
+# Next comes the lib dropdown then the pcell dropdown box
+# But we must declare the pcell dropdown box first because we need to 
+# refer to it when creating the lib dropdown box later
+
+# Define the PCell combo box
+combo_pcells = QComboBox.new(dialog)
+lib_pcells_hash[libs[0]].each { |pcell| # First display the pcells corresponding to libs[0]
+  combo_pcells.addItem(pcell)
+}
+    
+# Define the Libraries combo box
+combo_libs = QComboBox.new(dialog)
+libs.each { |p|
+  combo_libs.addItem(p) # libs[0] will be selected initially
+}
+combo_libs.currentIndexChanged_qs { |curr_sel_lib|
+  combo_pcells.clear
+  lib_pcells_hash[curr_sel_lib].each { |pcell| 
+    combo_pcells.addItem(pcell)
+  }
+}
+
+# Add the combo box to choose Lib
+qt_layout.addWidget(combo_libs)
+# Add the combo box to choose PCell    
+qt_layout.addWidget(combo_pcells)
+
+# OK button
+buttonOK = QPushButton.new(dialog)
+qt_layout.addWidget(buttonOK)
+buttonOK.text = " OK "
+buttonOK.clicked do 
+  dialog.accept()
+end
+
+result = dialog.exec
+result == 1 ? accepted = true : accepted = false
+
+input = combo_libs.currentText + "." + combo_pcells.currentText
+
+if accepted # If they didn't click Cancel
+  
+  # The lib and pcell names. If you are not sure, you can get all the available lib names using RBA::Library.library_names
+  lib,pcell = input.split('.')
+  
+  # The code starts here
+  type2s = { }
+  w = %w{TypeBoolean TypeDouble TypeInt TypeLayer TypeList TypeNone TypeShape TypeString}
+  w.each { |t| type2s[PCellParameterDeclaration::const_get(t)] = t }
+  library = Library.library_by_name(lib)
+  pcell_decl = library.layout.pcell_declaration(pcell)
+  
+  html = "Results for PCell: #{lib}.#{pcell}"
+  html &lt;&lt; "&lt;table border='1' cellpadding='5'&gt;"
+  html &lt;&lt; "&lt;tr&gt;"
+  html &lt;&lt; "&lt;td&gt;Name&lt;/td&gt;&lt;td&gt;Type&lt;/td&gt;&lt;td&gt;Unit&lt;/td&gt;&lt;td&gt;Default&lt;/td&gt;&lt;td&gt;Description&lt;/td&gt;&lt;td&gt;Hidden&lt;/td&gt;&lt;td&gt;Readonly?&lt;/td&gt;"
+  html &lt;&lt; "&lt;/tr&gt;"
+  
+  pcell_decl.get_parameters.each { |pd|
+    #if !pd.readonly?
+      html &lt;&lt; "&lt;tr&gt;"
+      html &lt;&lt; "&lt;td&gt;#{pd.name}&lt;/td&gt;&lt;td&gt;#{type2s[pd.type]}&lt;/td&gt;&lt;td&gt;#{pd.unit}&lt;/td&gt;&lt;td&gt;#{pd.default}&lt;/td&gt;&lt;td&gt;#{pd.description}&lt;/td&gt;&lt;td&gt;#{pd.hidden?}&lt;/td&gt;&lt;td&gt;#{pd.readonly?}\n"
+      html &lt;&lt; "&lt;/tr&gt;"
+    #end
+  }
+  
+  html &lt;&lt; "&lt;/table&gt;"
+    
+  BrowserDialog.new(html).exec
+  
+end</text>
+</klayout-macro>

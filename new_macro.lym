@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description/>
+ <version/>
+ <category/>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>false</show-in-menu>
+ <group-name/>
+ <menu-path/>
+ <interpreter>ruby</interpreter>
+ <dsl-interpreter-name/>
+ <text>require "waveguide.rb"
+
+# create a new view (mode 1) with an empty layout
+main_window = RBA::Application::instance.main_window
+layout = main_window.create_layout(0).layout
+layout_view = main_window.current_view
+# set the database unit (shown as an example, the default is 0.001)
+layout.dbu = 0.001
+# create a cell
+cell = layout.create_cell("TOP")
+# create a layer
+layer_index1 = layout.insert_layer(RBA::LayerInfo::new(1, 0))
+layer_index2 = layout.insert_layer(RBA::LayerInfo::new(2, 0))
+layer_index3 = layout.insert_layer(RBA::LayerInfo::new(3, 0))
+
+# add a shape
+pts1 = [RBA::Point.new(0, 0), RBA::Point.new(10.0/layout.dbu, 0.0), RBA::Point.new(10.0/layout.dbu,10.0/layout.dbu)]
+wg1 = RBA::Path.new(pts1,4.0/layout.dbu)
+cell.shapes(layer_index1).insert(wg1)
+
+
+# select the top cell in the view, set up the view's layer list and
+# fit the viewport to the extensions of our layout
+layout_view.select_cell(cell.cell_index, 0)
+layout_view.add_missing_layers
+layout_view.zoom_fit</text>
+</klayout-macro>
