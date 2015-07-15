@@ -35,7 +35,27 @@ module MyLib
   MyLib.constants.member?(:Taper) &amp;&amp; remove_const(:Taper)
   MyLib.constants.member?(:Mmi) &amp;&amp; remove_const(:Mmi)
   MyLib.constants.member?(:MyLib) &amp;&amp; remove_const(:MyLib)
+  # The library where we will put the PCell into 
+  class MyLib &lt; Library
   
+    def initialize  
+    
+      # Set the description
+      self.description = "My First Library"
+      
+      # Create the PCell declarations
+      layout.register_pcell("Circle", Circle::new)
+      layout.register_pcell("Taper", Taper::new)
+      layout.register_pcell("Mmi", Mmi::new)
+      # That would be the place to put in more PCells ...
+      
+      # Register us with the name "MyLib".
+      # If a library with that name already existed, it will be replaced then.
+      register("MyLib")
+      
+    end
+  
+  end  
   # The PCell declaration for the circle
   class Circle &lt; PCellDeclarationHelper
   
@@ -267,27 +287,7 @@ module MyLib
     end
   end
   
-  # The library where we will put the PCell into 
-  class MyLib &lt; Library
-  
-    def initialize  
-    
-      # Set the description
-      self.description = "My First Library"
-      
-      # Create the PCell declarations
-      layout.register_pcell("Circle", Circle::new)
-      layout.register_pcell("Taper", Taper::new)
-      layout.register_pcell("Mmi", Mmi::new)
-      # That would be the place to put in more PCells ...
-      
-      # Register us with the name "MyLib".
-      # If a library with that name already existed, it will be replaced then.
-      register("MyLib")
-      
-    end
-  
-  end
+
   
   # Instantiate and register the library
   MyLib::new

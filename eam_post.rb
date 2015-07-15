@@ -8,8 +8,10 @@ layout = main_window.create_layout(0).layout
 layout_view = LayoutView::current
 dbu = layout.dbu
 
+#get filename
 filename = 'G:\\Gent\\TW_modulator_mask\\TEST_00_test.gds'
 
+#get target cell
 layout.read(filename)
 cell = layout.top_cell
 target = Cell.new
@@ -22,9 +24,9 @@ cell.each_inst do |child|
   end
 end
 
-
+#chane particular structure color
 layer_index=layout.layer(1,0)
-target_layer_index = layout.layer(4,0)
+target_layer_index = layout.layer(100,1)
 target.each_shape(layer_index) do |shape|
   if shape.is_box?
     puts shape.box_height
@@ -34,6 +36,8 @@ target.each_shape(layer_index) do |shape|
   end
 end
 
+
+#get start_point and length
 vp0 = []
 vlength = []
 target.each_shape(target_layer_index) do |shape|
@@ -41,16 +45,59 @@ target.each_shape(target_layer_index) do |shape|
   vlength.push(shape.box_width)
 end
 
-wg35 = Eam_Lump.new()
-#wg35.shapes(eamcell)
+#initial all structure
+lump = Eam_Lump.new()
+tw = Eam_TW.new()
+stw = Eam_STW.new()
+tw_lump = Eam_TW_LUMP.new()
+# sort vp0, and sort vlength arounding the order of vp0
+tvp0 = vp0.sort {|p1,p2| p2.y <=> p1.y}
+sort_order = tvp0.map{|p| vp0.index(p)}
+tvlength = sort_order.map{|ind| vlength[ind]}
+vlength = tvlength
+vp0 = tvp0
 
+eamcell=nil
 vp0.each_index do |iter|
-  eamcell = layout.create_cell("EAM_LUMP#{vlength[iter]/1000}")
-  wg35.wg_length(vlength[iter])
-  wg35.shapes(eamcell)
-  t = CplxTrans::new(1.0, 0,false,vp0[iter].x,vp0[iter].y)
-  tmp = CellInstArray::new(eamcell.cell_index,t)
-  cell.insert(tmp)
+  case iter
+  when 0
+    cell_name = "EAM_TW_LUMP#{vlength[iter]/1000}"
+    eamcell = layout.cell(cell_name)
+    if eamcell == nil
+      eamcell = layout.create_cell(cell_name)
+    end
+    tw_lump.wg_length=vlength[iter]
+    tw_lump.shapes(eamcell)
+  when 2,3,4
+    cell_name = "EAM_LUMP#{vlength[iter]/1000}"
+    eamcell = layout.cell(cell_name)
+    if eamcell == nil
+      eamcell = layout.create_cell(cell_name)
+    end
+    lump.wg_length(vlength[iter])
+    lump.shapes(eamcell)   
+  when 6,9
+    cell_name = "EAM_TW#{vlength[iter]/1000}"
+    eamcell = layout.cell(cell_name)
+    if eamcell == nil
+      eamcell = layout.create_cell(cell_name)
+    end
+    tw.wg_length=vlength[iter]
+    tw.shapes(eamcell)    
+  when 11,15
+    cell_name = "EAM_STW200"
+    eamcell = layout.cell(cell_name)
+    if eamcell == nil
+      eamcell = layout.create_cell(cell_name)
+    end
+    stw.shapes(eamcell)    
+  end    
+  if eamcell
+    t = CplxTrans::new(1.0, 0,false,vp0[iter].x,vp0[iter].y)
+    tmp = CellInstArray::new(eamcell.cell_index,t)
+    cell.insert(tmp)
+  end
+  eamcell = nil
 end
 
 
