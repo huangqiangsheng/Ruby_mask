@@ -122,6 +122,7 @@ module MyBasic
   
   #define the waveguide structure, self_poly_falg is used to use the self path ->polygon code
   class Waveguide
+    attr_accessor :self_poly_flag  
     def initialize(pts, width, start_face_angle = nil, end_face_angle = nil,self_poly_flag = 0)
       pts = remove_straight_angles(pts)
       @wg = RBA::DPath::new(pts,width)
@@ -166,11 +167,29 @@ module MyBasic
     def start_angle
       @start_angle
     end
-    def end_anlge
+    def end_angle
       @end_angle
     end
+    def start_face_angle=(angle)
+      @start_face_angle = angle/180.0*Math::PI
+      @self_poly_flag = 1
+    end
+    def end_face_angle=(angle)
+      @end_face_angle = angle/180.0*Math::PI
+      @self_poly_flag = 1
+    end  
+    def start_face_angle
+      @start_face_angle
+    end
+    def end_face_angle
+      @end_face_angle
+    end        
     def wg
       @wg
+    end
+    def width=(w)
+      @width = w
+      @wg.width = @width
     end 
     def wg_length
       Path::from_dpath(@wg).length
