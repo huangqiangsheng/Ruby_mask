@@ -98,10 +98,16 @@ if __FILE__ == $0
   dbu = 0.001
   layout.dbu = dbu
   # create a cell
-  cell = layout.create_cell("CPW")  
+  top = layout.create_cell("Top")  
   cpw = Cpw_straight.new()
-  cpw.shapes(cell)
-    
+  vlength = [900.0, 1100.0, 1300.0]
+  vlength.each_with_index do |len,ind|
+    cell = layout.create_cell("CPW #{len}")  
+    cpw.wg_length = len/dbu
+    cpw.shapes(cell)
+    top.insert(CellInstArray::new(cell.cell_index,Trans::new(0,ind*250/dbu)))
+  end
+  
   layout_view.select_cell(cell.cell_index, 0)
   layout_view.add_missing_layers
   layout_view.zoom_fit

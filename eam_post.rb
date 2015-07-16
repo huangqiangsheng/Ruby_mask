@@ -18,7 +18,7 @@ target = Cell.new
 puts cell.name
 cell.each_inst do |child|
   #puts child.cell.name
-  #child.trans = Trans::new(0.0,0.0)
+  child.trans = Trans::new(0.0,0.0)
   if child.cell.name == 'layer1_resit_t_1'
     target=child.cell
   end
