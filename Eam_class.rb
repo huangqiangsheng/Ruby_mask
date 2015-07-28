@@ -38,6 +38,9 @@ class Eam_Lump
     @nInP_width = nInP_width/@dbu
     if wg_length+(taper1+taper2)*2.0>nInP_length
       nInP_length =  wg_length+(taper1+taper2)*2.0+60.0
+      if nInP_length < (300.0/@dbu)
+         nInP_length = 300.0/@dbu
+      end
     end
     @nInP_length = nInP_length/@dbu  
     @taper1 = taper1/@dbu
@@ -59,10 +62,12 @@ class Eam_Lump
     @wg_length = wg_length
     if @wg_length+(@taper1+@taper2)*2.0>@nInP_length
       @nInP_length =  @wg_length+(@taper1+@taper2)*2.0-50.0/@dbu
+      if @nInP_length < (300.0/@dbu)
+         @nInP_length = 300.0/@dbu
+      end      
     else
       @nInP_length = 300.0/@dbu
     end 
-    @nprobe_w = (@nInP_width - @nmetal_gap - 6.0/@dbu)/2.0
   end
   def shapes(cell)
     @ports = []
@@ -1130,6 +1135,7 @@ if __FILE__ == $0
   cell = layout.create_cell("Eam_Lump") 
   wg35 = Eam_Lump.new()
   wg35.wg_length (80.0/dbu)
+  wg35.wg_length (100.0/dbu)
   wg35.shapes(cell)  
     
   layout_view.select_cell(cell.cell_index, 0)
