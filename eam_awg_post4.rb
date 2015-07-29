@@ -26,9 +26,11 @@ top.each_inst do |child|
     iter = 5
   when 'layer9'
     iter = 6
+  else
+    next
   end 
-  i = iter.modulo(2)
-  j = iter/2
+  i = iter.modulo(3)
+  j = iter/3
   child.trans = Trans::new(6000*i/dbu,-4500*j/dbu)
 end
 

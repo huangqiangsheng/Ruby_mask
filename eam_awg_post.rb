@@ -43,10 +43,24 @@ vlength = []
 target.each_shape(target_layer_index) do |shape|
   vp0.push(shape.box_p1 + Point::new(0.0,shape.box_height/2.0))
   vlength.push(shape.box_width)
+  #vlength.push(100.0/dbu)
 end
 
+mesa_width_in = 1.4/dbu
+mesa_width_hybrid = 3.2/dbu
+mqw_width_in = 2.5/dbu
+mqw_width_hybrid = 4.5/dbu
+taper1 = 90.0/dbu
+taper2 = 20.0/dbu
 #initial all structure
 lump = Eam_Lump.new()
+lump.mesa_width_in = mesa_width_in
+lump.mesa_width_hybrid = mesa_width_hybrid
+lump.mqw_width_in = mqw_width_in
+lump.mqw_width_hybrid = mqw_width_hybrid
+lump.taper1 = taper1
+lump.taper2 = taper2
+
 # sort vp0, and sort vlength arounding the order of vp0
 tvp0 = vp0.sort {|p1,p2| p2.y <=> p1.y}
 sort_order = tvp0.map{|p| vp0.index(p)}

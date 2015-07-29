@@ -45,11 +45,45 @@ target.each_shape(target_layer_index) do |shape|
   vlength.push(shape.box_width)
 end
 
+mesa_width_in = 1.4/dbu
+mesa_width_hybrid = 3.2/dbu
+mqw_width_in = 2.5/dbu
+mqw_width_hybrid = 4.5/dbu
+taper1 = 90.0/dbu
+taper2 = 20.0/dbu
 #initial all structure
 lump = Eam_Lump.new()
+lump.mesa_width_in = mesa_width_in
+lump.mesa_width_hybrid = mesa_width_hybrid
+lump.mqw_width_in = mqw_width_in
+lump.mqw_width_hybrid = mqw_width_hybrid
+lump.taper1 = taper1
+lump.taper2 = taper2
+
 tw = Eam_TW.new()
+tw.mesa_width_in = mesa_width_in
+tw.mesa_width_hybrid = mesa_width_hybrid
+tw.mqw_width_in = mqw_width_in
+tw.mqw_width_hybrid = mqw_width_hybrid
+tw.taper1 = taper1
+tw.taper2 = taper2
+
 stw = Eam_STW.new()
+stw.mesa_width_in = mesa_width_in
+stw.mesa_width_hybrid = mesa_width_hybrid
+stw.mqw_width_in = mqw_width_in
+stw.mqw_width_hybrid = mqw_width_hybrid
+stw.taper1 = taper1
+stw.taper2 = taper2
+
 tw_lump = Eam_TW_LUMP.new()
+tw_lump.mesa_width_in = mesa_width_in
+tw_lump.mesa_width_hybrid = mesa_width_hybrid
+tw_lump.mqw_width_in = mqw_width_in
+tw_lump.mqw_width_hybrid = mqw_width_hybrid
+tw_lump.taper1 = taper1
+tw_lump.taper2 = taper2
+
 # sort vp0, and sort vlength arounding the order of vp0
 tvp0 = vp0.sort {|p1,p2| p2.y <=> p1.y}
 sort_order = tvp0.map{|p| vp0.index(p)}
