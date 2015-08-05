@@ -53,12 +53,12 @@ end
 #taper2 = 20.0/dbu
 #initial all structure
 lump = Eam_Lump.new()
-lump.mesa_width_in = mesa_width_in
-lump.mesa_width_hybrid = mesa_width_hybrid
-lump.mqw_width_in = mqw_width_in
-lump.mqw_width_hybrid = mqw_width_hybrid
-lump.taper1 = taper1
-lump.taper2 = taper2
+#lump.mesa_width_in = mesa_width_in
+#lump.mesa_width_hybrid = mesa_width_hybrid
+#lump.mqw_width_in = mqw_width_in
+#lump.mqw_width_hybrid = mqw_width_hybrid
+#lump.taper1 = taper1
+#lump.taper2 = taper2
 
 tw = Eam_TW.new()
 tw.mesa_width_in = mesa_width_in
@@ -93,39 +93,13 @@ vp0 = tvp0
 
 eamcell=nil
 vp0.each_index do |iter|
-  case iter
-  when 0
-    cell_name = "EAM_TW_LUMP#{vlength[iter]/1000}"
-    eamcell = layout.cell(cell_name)
-    if eamcell == nil
-      eamcell = layout.create_cell(cell_name)
-    end
-    tw_lump.wg_length=vlength[iter]
-    tw_lump.shapes(eamcell)
-  when 2,3,4
-    cell_name = "EAM_LUMP#{vlength[iter]/1000}"
-    eamcell = layout.cell(cell_name)
-    if eamcell == nil
-      eamcell = layout.create_cell(cell_name)
-    end
-    lump.wg_length(vlength[iter])
-    lump.shapes(eamcell)   
-  when 6,9
-    cell_name = "EAM_TW#{vlength[iter]/1000}"
-    eamcell = layout.cell(cell_name)
-    if eamcell == nil
-      eamcell = layout.create_cell(cell_name)
-    end
-    tw.wg_length=vlength[iter]
-    tw.shapes(eamcell)    
-  when 11,15
-    cell_name = "EAM_STW200"
-    eamcell = layout.cell(cell_name)
-    if eamcell == nil
-      eamcell = layout.create_cell(cell_name)
-    end
-    stw.shapes(eamcell)    
-  end    
+  cell_name = "Laser#{vlength[iter]/1000}"
+  eamcell = layout.cell(cell_name)
+  if eamcell == nil
+    eamcell = layout.create_cell(cell_name)
+  end
+  lump.wg_length(vlength[iter])
+  lump.shapes(eamcell)     
   if eamcell
     t = CplxTrans::new(1.0, 0,false,vp0[iter].x,vp0[iter].y)
     tmp = CellInstArray::new(eamcell.cell_index,t)
