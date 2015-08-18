@@ -24,6 +24,12 @@ module MyBasic
     return vector_angle(v1,v2)
   end
   
+  def cross_point(p1,dir1,p2,dir2)
+    rad1 = dir1/180.0*Math::PI
+    rad2 = dir2/180.0*Math::PI
+    x0 = (p1.y-p2.y-Math::tan(rad1)*p1.x+Math::tan(rad2)*p2.x)/(tan(rad2)-tan(rad1))
+    y0 = (p1.y*Math::tan(rad2)-p2.y*Math::tan(rad1)-Math::tan(rad1)*Math::tan(rad2)*(p1.x-p2.x))/(tan(rad2)-tan(rad1))  
+  end
   
   def remove_straight_angles(pts)
     tmppts = [] # remove the same point
@@ -69,7 +75,12 @@ module MyBasic
       end
       return pts   
   end
-
+  def linearc_one_point_two_angle(p1,radius,start_angle,span_angle,delta_angle = 0.5) #p1 on the curve
+      start_angle = start_angle
+      end_angle = start_angle + span_angle
+      centre = p1 - DPoint.new(radius*Math::cos(start_angle*Math::PI/180.0),radius*Math::sin(start_angle*Math::PI/180.0))
+      return linearc(centre,radius,start_angle,end_angle,delta_angle)
+  end
   def linearc_ellipse(f0,a,e,start_angle,end_angle,delta_angle = 0.5)
       pts = []
       n = ((end_angle-start_angle)/delta_angle).abs.round.to_f
@@ -118,6 +129,89 @@ module MyBasic
     end
     newpts.push(pts[-1])
     return newpts
+  end
+  
+  def countercolockwise_rotate(p,angle) # angle rad
+    return DPoint.new(p.x*Math::cos(angle)+p.y*Math::sin(angle),
+                     -p.x*Math::sin(angle)+p.y*Math::cos(angle)) 
+  end
+  def sbend(p_in1,dir_in1,p_in2,dir_in2,radius,delta_angle = 0.5)
+    #transform
+    rotrad = dir_in1*Math::PI/180.0
+    p1 = DPoint.new(0.0,0.0)
+    dir1 = 0
+    tmp = p_in2-p_in1 # Move
+    p2 = countercolockwise_rotate(tmp,rotrad)  # countercolockwise Rotate 
+    dir2 = dir_in2-dir_in1
+    flag = 0; # 0 can be directly connected, 1 connected by one circle, 2 connect by two circle
+    p0 = DPoint.new(0.0,0.0)  # cross point, when flag == 1
+    if dir1 == dir2 #parallel
+      angle1 = line_angle(p1,p2)/Math::PI*180.0
+      if 1e-6> (angle1- dir1).abs
+        flag = 0
+      else
+        flag = 2
+      end    
+    else
+      if 90.0 == dir2.modulo(180.0)
+        xcross = p2.x
+      else
+        xcross = p2.x-p2.y/Math::tan(dir2/180.0*Math::PI)
+      end
+      p0 = DPoint.new(xcross,0.0)
+      if xcross > 0
+        flag = 1
+      elsif xcross <= 0
+        flag = 2
+      else
+        raise "angle2 error: #{angle2}"
+      end
+    end
+    case flag
+    when 0
+      pts = [p1,p2]
+    when 1
+      pts = [p1,p0,p2]
+      pts = round_corners(pts,radius,delta_angle)
+    when 2
+      alpha = dir2/180.0*Math::PI
+      dy = p2.y-p1.y
+      dx = p2.x-p1.x
+      if (dy > 0) && (dx >0)
+        theta1 = Math::acos((1+Math::cos(alpha)-dy/radius)/2.0)
+        cdx = radius*(2.0*Math::sin(theta1)-Math::sin(alpha))
+        dx = p2.x-p1.x
+        if cdx > dx
+          raise "Input 'Bend radius' is too large in sbend function"
+        end
+        startp = DPoint.new(dx-cdx,p1.y)
+        pts1 = linearc_one_point_two_angle(startp,radius,270.0,theta1/Math::PI*180.0,delta_angle)
+        theta2 = theta1 - alpha
+        pts2 = linearc_one_point_two_angle(pts1[-1],radius,90.0+theta1/Math::PI*180.0,-theta2/Math::PI*180.0,delta_angle)
+        pts = [p1]+pts1+pts2+[p2]
+      elsif (dy < 0) & (dx >0)
+        talpha = -alpha
+        tdy = -dy
+        theta1 = Math::acos((1+Math::cos(talpha)-tdy/radius)/2.0)
+        cdx = radius*(2.0*Math::sin(theta1)-Math::sin(talpha))
+        dx = p2.x-p1.x
+        if cdx > dx
+          raise "Input 'Bend radius' is too large in sbend function"
+        end
+        startp = DPoint.new(dx-cdx,p1.y)
+        pts1 = linearc_one_point_two_angle(startp,radius,270.0,theta1/Math::PI*180.0,delta_angle)
+        theta2 = theta1 - talpha
+        pts2 = linearc_one_point_two_angle(pts1[-1],radius,90.0+theta1/Math::PI*180.0,-theta2/Math::PI*180.0,delta_angle)
+        pts1.collect!{|pt| DPoint.new(pt.x, -pt.y)}
+        pts2.collect!{|pt|  DPoint.new(pt.x, -pt.y)}  
+        pts = [p1]+pts1+pts2+[p2]      
+      elsif
+        raise "To be continue in sbend function"
+      end
+    end
+    pts.collect!{|pt| pt = countercolockwise_rotate(pt,-rotrad)} # countercolockwise Rotate 
+    pts.collect!{|pt| pt = pt+p_in1}
+    return pts    
   end
   
   #define the waveguide structure, self_poly_falg is used to use the self path ->polygon code
