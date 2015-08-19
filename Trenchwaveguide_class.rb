@@ -5,6 +5,7 @@ class Trenchwaveguide
   include RBA
   attr_accessor :wg_width, :trench_width, 
                 :end_face_angle,:start_face_angle,
+                :start_angle, :end_angle,
                 :lay_wg,:lay_trwg, :self_poly_flag
                 
   def initialize(pts, 
@@ -12,6 +13,8 @@ class Trenchwaveguide
                  trench_width = 3.0, 
                  start_face_angle = nil, 
                  end_face_angle = nil,
+                 start_angle = nil,
+                 end_angle = nil,
                  lay_wg = CellView::active.layout.layer(1, 0),
                  lay_trwg = CellView::active.layout.layer(1, 1),                 
                  self_poly_flag = 0,
@@ -23,6 +26,8 @@ class Trenchwaveguide
     @start_face_angle = start_face_angle
     @end_face_angle = end_face_angle
     @self_poly_flag = self_poly_flag
+    @start_angle = start_angle
+    @end_angle = end_angle
     @lay_wg = lay_wg
     @lay_trwg = lay_trwg
     @ports = []
@@ -43,7 +48,7 @@ class Trenchwaveguide
     @dbu
   end
   def shapes(cell)
-    wg = Waveguide.new(@pts, @wg_width, @start_face_angle, @end_face_angle,@self_poly_flag)  
+    wg = Waveguide.new(@pts, @wg_width, @start_face_angle, @end_face_angle,@start_angle,@end_angle,@self_poly_flag)  
     @ports = []
     @ports.push(Ports::new(width = @wg_width,
                           direction = wg.start_angle+Math::PI,

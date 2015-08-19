@@ -171,7 +171,7 @@ class Awg
         array_Len[iter-1] = lw-arrayed_taper-2.0*ra
         c0_manhanttan = DPoint::new(array_R,lw)  #manhattan centre
       end
-      wg1 = Waveguide.new(pts,array_w,nil,180)
+      wg1 = Waveguide.new(pts,array_w,nil,180,nil,90.0)
       cell.shapes(layer_index2).insert(wg1.poly)    
       round_wg_Len[iter-1] = array_Len[iter-1] #round section length
       array_Len[iter-1]=wg1.wg_length
@@ -194,7 +194,7 @@ class Awg
 #        array_Len[iter-1] =  (round_wg_Len[iter-1]+(iter-1)*arrayed_spacing+manhanttan_dy+
 #                             Math::PI/2.0*array_R*@bend_neff/@straight_neff+overlap_array)
       end
-      wg = Waveguide.new(pts,array_w,180,90)
+      wg = Waveguide.new(pts,array_w,180,90,90.0,0.0)
       array_Len[iter-1]=array_Len[iter-1]+wg.wg_length
       cell.shapes(layer_index2).insert(wg.poly)
       cell.shapes(layer_index2).insert(wg.poly.transformed(t1).transformed(t2))

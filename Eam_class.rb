@@ -475,9 +475,9 @@ class Eam_TW
            DPoint::new(@wg_length+@cpw_radius+@lp[1],0.0),
            DPoint::new(@wg_length+@cpw_radius+@lp[1],@cpw_radius)]
     pts = round_corners(pts,@cpw_radius,2.0)
-    wg = Waveguide::new(pts,@cpw_width,0,0)
+    wg = Waveguide::new(pts,@cpw_width,0,0,-90.0,90.0)
     poly1.push(wg.poly)
-    wg = Waveguide::new(pts,@cpw_width+@cpw_gap*2.0,0,0)
+    wg = Waveguide::new(pts,@cpw_width+@cpw_gap*2.0,0,0,-90.0,90.0)
     poly2.push(wg.poly)
     
     taperL = 30.0/@dbu
@@ -741,9 +741,9 @@ class Eam_TW_LUMP
            DPoint::new(@wg_length+@cpw_radius+@lp[1],0.0),
            DPoint::new(@wg_length+@cpw_radius+@lp[1],@cpw_radius)]
     pts = round_corners(pts,@cpw_radius,2.0)
-    wg = Waveguide::new(pts,@cpw_width,0,0)
+    wg = Waveguide::new(pts,@cpw_width,0,0,-90.0,90.0)
     poly1.push(wg.poly)
-    wg = Waveguide::new(pts,@cpw_width+@cpw_gap*2.0,0,0)
+    wg = Waveguide::new(pts,@cpw_width+@cpw_gap*2.0,0,0,-90.0,90.0)
     poly2.push(wg.poly)
     
     taperL = 30.0/@dbu
@@ -1061,9 +1061,9 @@ class Eam_STW
            DPoint::new(tmpl+@cpw_radius+@len[-1],0.0),
            DPoint::new(tmpl+@cpw_radius+@len[-1],@cpw_radius)]
     pts = round_corners(pts,@cpw_radius,2.0)
-    wg = Waveguide::new(pts,@cpw_width,0,0)
+    wg = Waveguide::new(pts,@cpw_width,0,0,-90.0,90.0)
     poly1.push(wg.poly)
-    wg = Waveguide::new(pts,@cpw_width+@cpw_gap*2.0,0,0)
+    wg = Waveguide::new(pts,@cpw_width+@cpw_gap*2.0,0,0,-90.0,90.0)
     poly2.push(wg.poly)
     
     taperL = 30.0/@dbu
