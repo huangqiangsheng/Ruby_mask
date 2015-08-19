@@ -5,23 +5,25 @@ class PZT_Modulator
   include RBA
   attr_accessor :wsin, :wmmi, :wmmi_in, 
                 :radius,:lmmi,
-                :taperL, :gap, :spacing,         
-                :cpw_pgap, :cpw_pwidth, 
-                :cpw_radius, :cpw_agap, :cpw_awidth, :wgound,
+                :taperL, :gap, :spacing,:sbend_len,        
+                :cpw_pgap, :cpw_pwidth,
+                :cpw_radius, :cpw_agap, :cpw_awidth, :wgound, :via_L,
                 :lay_sin, :lay_active, :lay_via, :lay_probe,
                 :dbu,:len
                 
   def initialize(wsin = 0.7,
                  wmmi = 3.0,
                  lmmi = 4.0,
-                 radius = 3.75,
+                 radius = 15.0,
                  taperL = 10.0,
                  gap = 1.0,
                  wmmi_in = 1.0,
                  spacing = 15.0,
+                 sbend_len = 20.0,
                  cpw_pgap = 9.0,
                  cpw_pwidth = 8.0,
                  wground = 100.0,
+                 via_L = 2.0,
                  cpw_radius = 30.0,
                  cpw_agap =5.0,
                  cpw_awidth = 10.0,
@@ -37,13 +39,14 @@ class PZT_Modulator
     @lmmi = lmmi/@dbu
     @radius = radius/@dbu
     @taperL = taperL/@dbu
-    @lbend = 2*@radius
+    @sbend_len = sbend_len/@dbu
     @gap = gap/@dbu
     @wmmi_in = wmmi_in/@dbu
     @spacing = spacing/@dbu
     @cpw_pgap = cpw_pgap/@dbu
     @cpw_pwidth = cpw_pwidth/@dbu
     @wground = wground/@dbu
+    @via_L = via_L/@dbu
     @cpw_radius = cpw_radius/@dbu
     @cpw_agap = cpw_agap/@dbu
     @cpw_awidth = cpw_awidth/@dbu
@@ -89,21 +92,25 @@ class PZT_Modulator
     shape.insert(mmi_taper.poly.transformed(t1).transformed(t2))
     t2 = Trans::new(2.0*@taperL+@lmmi,-@gap/2.0-@wmmi_in/2.0)
     shape.insert(mmi_taper.poly.transformed(t1).transformed(t2))    
-    pts = [DPoint.new(2.0*@taperL+@lmmi,@gap/2.0+@wmmi_in/2.0),
-           DPoint.new(2.0*@taperL+@lmmi+@radius,@gap/2.0+@wmmi_in/2.0),
-           DPoint.new(2.0*@taperL+@lmmi+@radius,@gap/2.0+@wmmi_in/2.0+2.0*@radius),
-           DPoint.new(2.0*@taperL+@lmmi+@radius*3.0+wglength,@gap/2.0+@wmmi_in/2.0+2.0*@radius),
-           DPoint.new(2.0*@taperL+@lmmi+@radius*3.0+wglength,@gap/2.0+@wmmi_in/2.0),
-           DPoint.new(2.0*@taperL+@lmmi+@radius*4.0+wglength,@gap/2.0+@wmmi_in/2.0)]
-    rpts = round_corners(pts,@radius,2)
-    rwg = Waveguide.new(rpts,@wsin)
+    #Sbend
+    p1 = DPoint.new(2.0*@taperL+@lmmi,@gap/2.0+@wmmi_in/2.0)
+    dir1 = 0
+    p2 = DPoint.new(2.0*@taperL+@lmmi+@sbend_len,@spacing/2.0)
+    dir2 = 0
+    pts = sbend(p1,dir1,p2,dir2,radius,1)
+    pts.push(DPoint.new(2.0*@taperL+@lmmi+@sbend_len+wglength/2.0,@spacing/2.0))
+    rwg = Waveguide.new(pts,@wsin)
     shape.insert(rwg.poly)
-    t1 = Trans::new(Trans::M0)
-    shape.insert(rwg.poly.transformed(t1))
-    #MMI out
-    ldev = wglength+@taperL*4.0+@lmmi*2.0+4.0*@radius
+    t3 = Trans::new(Trans::M0)
+    shape.insert(rwg.poly.transformed(t3))
+    
+    #Sbend out
+    ldev = wglength+@taperL*4.0+@lmmi*2.0+2.0*@sbend_len
     t1 = Trans::new(Trans::M90)
-    t2 = Trans::new(ldev,0.0)    
+    t2 = Trans::new(ldev,0.0) 
+    shape.insert(rwg.poly.transformed(t1).transformed(t2)) 
+    shape.insert(rwg.poly.transformed(t1).transformed(t2).transformed(t3))       
+    #MMI out   
     shape.insert(mmi_taper.poly.transformed(t1).transformed(t2))
     shape.insert(Polygon::from_dpoly(DPolygon.new(mmi)).transformed(t1).transformed(t2))
     t1 = Trans::new(ldev-@taperL*2.0-@lmmi,@gap/2.0+@wmmi_in/2.0)
@@ -124,7 +131,7 @@ class PZT_Modulator
     gpoly = []
     airpoly = []  
     start_x = 0.0
-    lastx = start_x+@taperL*2.0+@lmmi+@lbend
+    lastx = start_x+@taperL*2.0+@lmmi+@sbend_len
     for iter in 0..(@len.length/3-1) do
       wglength = @len[iter*3+1]
       pts = [DPoint.new(lastx,0.0), DPoint.new(lastx+wglength,0.0)]
@@ -139,7 +146,29 @@ class PZT_Modulator
     spoly.each {|p| shape.insert(p)}    
   end  
   
-  def via(shape)               
+  def via(shape) 
+    extend = 1.0/@dbu
+    spoly = []
+    gpoly = []
+    airpoly = []  
+    start_x = 0.0
+    lastx = start_x+@taperL*2.0+@lmmi+@sbend_len
+    for iter in 0..(@len.length/3-1) do
+      wglength = @len[iter*3+1]
+      pts = [DPoint.new(lastx+extend/2.0,0.0), DPoint.new(lastx+@via_L+extend/2.0,0.0)]
+      spoly.push(Waveguide.new(pts,@cpw_awidth-extend).poly)
+      airpoly.push(Waveguide.new(pts,@cpw_awidth+@cpw_agap*2.0+extend).poly)
+      gpoly.push(Waveguide.new(pts,@wground-extend).poly)
+      pts = [DPoint.new(lastx+wglength-@via_L-extend/2.0,0.0), DPoint.new(lastx+wglength-extend/2.0,0.0)]
+      spoly.push(Waveguide.new(pts,@cpw_awidth-extend).poly)
+      airpoly.push(Waveguide.new(pts,@cpw_awidth+@cpw_agap*2.0+extend).poly)
+      gpoly.push(Waveguide.new(pts,@wground-extend).poly)
+      lastx = lastx + @len[iter*3+1] + @len[iter*3+2]
+    end     
+    ep = RBA::EdgeProcessor::new()
+    out = ep.boolean_p2p(airpoly,gpoly,RBA::EdgeProcessor::ModeBNotA,false, false)
+    out.each {|p| shape.insert(p)}   
+    spoly.each {|p| shape.insert(p)}                  
   end   
   
   def probe(shape)

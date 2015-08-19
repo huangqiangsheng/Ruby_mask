@@ -101,7 +101,7 @@ module MyBasic
   end  
   
   #pts is RBA::Point
-  def round_corners(pts,radius,delta_angle = 0.5)
+  def round_corners(pts,radius,delta_angle = 0.5,ignore_flag = false)
     pts = remove_straight_angles(pts)
     newpts = [pts[0]]
     if 2 <= pts.length
@@ -112,12 +112,26 @@ module MyBasic
         l1 = radius * Math::tan(beta.abs/2.0)
         p1 = RBA::DPoint.new(l1/Math.sqrt(v1.sq_abs)*(pts[iter].x-pt.x)+pt.x,
                              l1/Math.sqrt(v1.sq_abs)*(pts[iter].y-pt.y)+pt.y)
+        p2 = RBA::DPoint.new(l1/Math.sqrt(v2.sq_abs)*(pts[iter+2].x-pt.x)+pt.x,
+                             l1/Math.sqrt(v2.sq_abs)*(pts[iter+2].y-pt.y)+pt.y)
         #if p1 is smaller than point in newpts[]
-        if (p1-pt).sq_abs <= (newpts[-1]-pt).sq_abs
+        if (((p1-pt).sq_abs - (newpts[-1]-pt).sq_abs)<=1e-3)  && (((p2-pt).sq_abs - (pts[iter+2]-pt).sq_abs) <= 1e-3)
           r = radius
-        else
-          r = Math.sqrt((newpts[-1]-pt).sq_abs)
-          p1 = newpts[-1]
+        else 
+          #radius is too large
+          lv1 = Math.sqrt(v1.sq_abs)
+          lv2 = Math.sqrt(v2.sq_abs)
+          if lv1 >= lv2
+            r = lv2/Math::tan(beta.abs/2.0)
+            p1 = RBA::DPoint.new(lv2/Math.sqrt(v1.sq_abs)*(pts[iter].x-pt.x)+pt.x,
+                                 lv2/Math.sqrt(v1.sq_abs)*(pts[iter].y-pt.y)+pt.y)
+          else
+            r = lv1/Math::tan(beta.abs/2.0)
+            p1 = newpts[-1]
+          end
+          if !ignore_flag
+            raise "The ' Bend radius #{radius}' is too large, min Radius #{r}."
+          end
         end
         xdir = RBA::DPoint.new(1,0)
         start_angle = vector_angle(xdir,v1)-beta/beta.abs*Math::PI/2.0
@@ -155,12 +169,26 @@ module MyBasic
     else
       if 90.0 == dir2.modulo(180.0)
         xcross = p2.x
+      elsif 0 == dir2.modulo(180.0)
+        xcross = -1
       else
         xcross = p2.x-p2.y/Math::tan(dir2/180.0*Math::PI)
       end
       p0 = DPoint.new(xcross,0.0)
       if xcross > 0
-        flag = 1
+        dp1 = p2-p0
+        dp2 = DPoint.new(Math::cos(dir2*Math::PI/180.0),Math::sin(dir2*Math::PI/180.0))
+        dot = dp1.x*dp2.x+dp1.y*dp2.y
+        if dot > 0 
+          if ((p2.y.abs - (radius+radius*Math::cos(dir2/180.0*Math::PI).abs))<1e-3)
+           #if cannot be connect by two circle, then flag = 1
+            flag = 1
+          else
+            flag = 2
+          end
+        else
+          flag = 2
+        end
       elsif xcross <= 0
         flag = 2
       else
@@ -177,36 +205,64 @@ module MyBasic
       alpha = dir2/180.0*Math::PI
       dy = p2.y-p1.y
       dx = p2.x-p1.x
-      if (dy > 0) && (dx >0)
-        theta1 = Math::acos((1+Math::cos(alpha)-dy/radius)/2.0)
-        cdx = radius*(2.0*Math::sin(theta1)-Math::sin(alpha))
-        dx = p2.x-p1.x
-        if cdx > dx
-          raise "Input 'Bend radius' is too large in sbend function"
+      if ((dy > 0) || (dy ==0 && dir2<0)) && (dx >0)
+        tmp_v = (1+Math::cos(alpha)-dy/radius)/2.0
+        if tmp_v <0
+           start_angle = 270.0
+           span_angle = 90.0
+           dir2 = dir2.modulo(360.0)
+           if (dir2<90.0) && (dir2>=0.0)
+             pt2 = DPoint.new(p2.x-2*radius+radius*Math::sin(alpha),0.0)
+           elsif (dir2<180.0) && (dir2>=90.0)
+             pt2 = DPoint.new(p2.x-radius*Math::sin(alpha),0.0)
+           elsif (dir2<270.0) && (dir2>=180.0)
+             pt2 = DPoint.new(p2.x-radius*Math::sin(alpha),0.0) 
+           elsif (dir2<360.0) && (dir2>=270.0)
+             pt2 = DPoint.new(p2.x-2*radius+radius*Math::sin(alpha),0.0)                       
+           end
+           
+           pts1 =  linearc_one_point_two_angle(pt2,radius,start_angle,span_angle,delta_angle)
+           p3 =  pts1[-1]#the point of the 1/4 circle
+           dir3 = 90.0
+           pts2 = sbend(p3,dir3,p2,dir2,radius,delta_angle)
+           pts = [p1,pt2]+pts1+pts2         
+        else 
+          theta1 = Math::acos((1+Math::cos(alpha)-dy/radius)/2.0)
+          cdx = radius*(2.0*Math::sin(theta1)-Math::sin(alpha))
+          dx = p2.x-p1.x
+          if cdx > dx
+            raise "Input 'Bend radius = #{radius}'  is too large in sbend function."
+          end
+          startp = DPoint.new(dx-cdx,p1.y)
+          pts1 = linearc_one_point_two_angle(startp,radius,270.0,theta1/Math::PI*180.0,delta_angle)
+          theta2 = theta1 - alpha
+          pts2 = linearc_one_point_two_angle(pts1[-1],radius,90.0+theta1/Math::PI*180.0,-theta2/Math::PI*180.0,delta_angle)
+          pts = [p1]+pts1+pts2+[p2]
         end
-        startp = DPoint.new(dx-cdx,p1.y)
-        pts1 = linearc_one_point_two_angle(startp,radius,270.0,theta1/Math::PI*180.0,delta_angle)
-        theta2 = theta1 - alpha
-        pts2 = linearc_one_point_two_angle(pts1[-1],radius,90.0+theta1/Math::PI*180.0,-theta2/Math::PI*180.0,delta_angle)
-        pts = [p1]+pts1+pts2+[p2]
-      elsif (dy < 0) & (dx >0)
-        talpha = -alpha
-        tdy = -dy
-        theta1 = Math::acos((1+Math::cos(talpha)-tdy/radius)/2.0)
-        cdx = radius*(2.0*Math::sin(theta1)-Math::sin(talpha))
-        dx = p2.x-p1.x
-        if cdx > dx
-          raise "Input 'Bend radius' is too large in sbend function"
-        end
-        startp = DPoint.new(dx-cdx,p1.y)
-        pts1 = linearc_one_point_two_angle(startp,radius,270.0,theta1/Math::PI*180.0,delta_angle)
-        theta2 = theta1 - talpha
-        pts2 = linearc_one_point_two_angle(pts1[-1],radius,90.0+theta1/Math::PI*180.0,-theta2/Math::PI*180.0,delta_angle)
+      elsif ((dy < 0) || (dy ==0 && dir2>0))& (dx >0) #mirror x = 0
+        p2.y = -p2.y #mirror
+        dir2 = -dir2 #mirror
+        pts1 = sbend(p1,dir1,p2,dir2,radius,delta_angle)
         pts1.collect!{|pt| DPoint.new(pt.x, -pt.y)}
-        pts2.collect!{|pt|  DPoint.new(pt.x, -pt.y)}  
-        pts = [p1]+pts1+pts2+[p2]      
+        pts = [p1]+pts1
+      elsif (dx<=0) && dy.abs > 2.0*radius 
+        if dy>0
+          start_angle = 270.0
+          span_angle = 90.0
+          pts1 =  linearc_one_point_two_angle(p1,radius,start_angle,span_angle,delta_angle)
+          p3 =  pts1[-1]#the point of the 1/4 circle
+          dir3 = 90.0
+          pts2 = sbend(p3,dir3,p2,dir2,radius,delta_angle)
+          pts = [p1]+pts1+pts2
+        elsif dy<0 #mirror x = 0
+          p2.y = -p2.y
+          dir2 = -dir2
+          pts1 = sbend(p1,dir1,p2,dir2,radius,delta_angle)
+          pts1.collect!{|pt| DPoint.new(pt.x, -pt.y)}
+          pts = [p1]+pts1
+        end             
       elsif
-        raise "To be continue in sbend function"
+        raise "The ' Bend radius #{radius}' is too large. Or, the two points are too close. To be continue in sbend function"
       end
     end
     pts.collect!{|pt| pt = countercolockwise_rotate(pt,-rotrad)} # countercolockwise Rotate 
