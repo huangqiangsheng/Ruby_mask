@@ -24,15 +24,15 @@ layer_index3 = layout.insert_layer(RBA::LayerInfo::new(3, 0))
 #wg1 = Waveguide.new(pts,width,90,0)
 #cell.shapes(layer_index2).insert(wg1.poly)
 
-for iter in  [0]
+for iter in  [20]
   width = 2.0/layout.dbu
-  radius = 20.0/layout.dbu
+  radius = 5.0/layout.dbu
   len = 10.0/layout.dbu
   dx = 20.0/layout.dbu
-  dy = 7.5/layout.dbu
+  dy = 0.0/layout.dbu
   start_x = 0
   start_y = 60.0/layout.dbu*iter
-  dir1 = 0.0
+  dir1 = 0
   dir2 = iter*10.0
   p0 = RBA::DPoint.new(start_x-len*Math::cos(dir1/180.0*Math::PI), 
                        start_y-len*Math::sin(dir1/180.0*Math::PI))
@@ -44,7 +44,7 @@ for iter in  [0]
   dir2 = line_angle(p2,p3)/Math::PI*180.0
   pts1 = [p0, p1]
   pts2 = [p2, p3]
-  pts3 = sbend(p1,dir1,p2,dir2,radius)
+  pts3 = sbend(p1,dir1,p2,dir2,radius,5)
   pts = pts1+pts3+pts2
   wg1 = Waveguide.new(pts,width)
   cell.shapes(layer_index1).insert(wg1.poly)

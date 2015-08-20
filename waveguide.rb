@@ -220,7 +220,9 @@ module MyBasic
            elsif (dir2<360.0) && (dir2>=270.0)
              pt2 = DPoint.new(p2.x-2*radius+radius*Math::sin(alpha),0.0)                       
            end
-           
+           if pt2.x < -1e-6
+             raise "Input 'Bend radius = #{radius}'  is too large in sbend function."
+           end
            pts1 =  linearc_one_point_two_angle(pt2,radius,start_angle,span_angle,delta_angle)
            p3 =  pts1[-1]#the point of the 1/4 circle
            dir3 = 90.0
