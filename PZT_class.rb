@@ -142,8 +142,8 @@ class PZT_Modulator
     end     
     ep = RBA::EdgeProcessor::new()
     out = ep.boolean_p2p(airpoly,gpoly,RBA::EdgeProcessor::ModeBNotA,false, false)
-    out.each {|p| shape.insert(p)}   
-    spoly.each {|p| shape.insert(p)}    
+    out = ep.boolean_p2p(out,spoly,RBA::EdgeProcessor::ModeOr,false, false)
+    out.each {|p| shape.insert(p)}      
   end  
   
   def via(shape) 
@@ -155,14 +155,18 @@ class PZT_Modulator
     lastx = start_x+@taperL*2.0+@lmmi+@sbend_len
     for iter in 0..(@len.length/3-1) do
       wglength = @len[iter*3+1]
-      pts = [DPoint.new(lastx+extend/2.0,0.0), DPoint.new(lastx+@via_L+extend/2.0,0.0)]
-      spoly.push(Waveguide.new(pts,@cpw_awidth-extend).poly)
-      airpoly.push(Waveguide.new(pts,@cpw_awidth+@cpw_agap*2.0+extend).poly)
-      gpoly.push(Waveguide.new(pts,@wground-extend).poly)
-      pts = [DPoint.new(lastx+wglength-@via_L-extend/2.0,0.0), DPoint.new(lastx+wglength-extend/2.0,0.0)]
-      spoly.push(Waveguide.new(pts,@cpw_awidth-extend).poly)
-      airpoly.push(Waveguide.new(pts,@cpw_awidth+@cpw_agap*2.0+extend).poly)
-      gpoly.push(Waveguide.new(pts,@wground-extend).poly)
+      if (@len[iter*3] > 0) || (iter == 0)
+        pts = [DPoint.new(lastx+extend/2.0,0.0), DPoint.new(lastx+@via_L+extend/2.0,0.0)]
+        spoly.push(Waveguide.new(pts,@cpw_awidth-extend).poly)
+        airpoly.push(Waveguide.new(pts,@cpw_awidth+@cpw_agap*2.0+extend).poly)
+        gpoly.push(Waveguide.new(pts,@wground-extend).poly)
+      end
+      if (@len[iter*3+2] > 0) || (iter == (@len.length/3-1))
+        pts = [DPoint.new(lastx+wglength-@via_L-extend/2.0,0.0), DPoint.new(lastx+wglength-extend/2.0,0.0)]
+        spoly.push(Waveguide.new(pts,@cpw_awidth-extend).poly)
+        airpoly.push(Waveguide.new(pts,@cpw_awidth+@cpw_agap*2.0+extend).poly)
+        gpoly.push(Waveguide.new(pts,@wground-extend).poly)
+      end
       lastx = lastx + @len[iter*3+1] + @len[iter*3+2]
     end     
     ep = RBA::EdgeProcessor::new()
@@ -182,19 +186,21 @@ class PZT_Modulator
     len2 = Array.new(@len)
     len2[0]  = len2[0]-lr
     len2[-1] = len2[-1]-lr
-    if len2[0] <=0
-      len2[0] = extend
+    if len2[0] <= (extend*50.0)
+      len2[0] = extend*50.0
     end
-    if len2[-1] <=0
-      len2[0] = extend
+    if len2[-1] <= (extend*50.0)
+      len2[-1] = extend*50.0
     end
     totlen = 0
     for iter in 0..(len2.length/3-1) do
       wglength = len2[iter*3]
       totlen = totlen + len2[iter*3]+len2[iter*3+1]
-      pts = [DPoint.new(lastx-wglength-@via_L-extend/2.0,0.0), DPoint.new(lastx+@via_L+extend/2.0,0.0)]
-      spoly.push(Waveguide.new(pts,@cpw_pwidth).poly)
-      gpoly.push(Waveguide.new(pts,@wground).poly)
+      if wglength > 0
+        pts = [DPoint.new(lastx-wglength-@via_L-extend/2.0,0.0), DPoint.new(lastx+@via_L+extend/2.0,0.0)]
+        spoly.push(Waveguide.new(pts,@cpw_pwidth).poly)
+        gpoly.push(Waveguide.new(pts,@wground).poly)
+      end
       lastx = lastx + len2[iter*3+1] + len2[iter*3+2]
     end     
     wglength = len2[-1]
@@ -218,12 +224,12 @@ class PZT_Modulator
            DPoint::new(lastx-len2[0]-@cpw_radius-@via_L-extend/2.0,@cpw_radius+extend)]
     t2 = Trans::new(totlen+2.0*@via_L-extend+2.0*pts[0].x,0.0)            
     pts = round_corners(pts,@cpw_radius,2.0)
-    spoly.push(Waveguide::new(pts,@cpw_pwidth,90.0,0.0).poly)
-    airpoly.push(Waveguide::new(pts,@cpw_pwidth+@cpw_pgap*2.0,90.0,0.0).poly)
+    spoly.push(Waveguide::new(pts,@cpw_pwidth,90.0,0,180.0,90).poly)
+    airpoly.push(Waveguide::new(pts,@cpw_pwidth+@cpw_pgap*2.0,90.0,0.0,180.0,90).poly)
     spoly.push(spoly[-1].transformed(t1).transformed(t2))
     airpoly.push(airpoly[-1].transformed(t1).transformed(t2))  
     
-    xp0 = lastx-len2[0]-@cpw_radius-@via_L  
+    xp0 = lastx-len2[0]-@cpw_radius-@via_L-extend/2.0  
     #Taper
     pts = [DPoint::new(xp0,@cpw_radius),
            DPoint::new(xp0,@cpw_radius+taperL)]
@@ -256,68 +262,17 @@ class PZT_Modulator
     spoly.each {|p| shape.insert(p)} 
     #airpoly.each {|p| shape.insert(p)} 
   end
-  def aa(shape)
-    tmpl = 0
-    for iter in 0..(@len.length/3-1) do
-      tmpl += @len[iter*3+1]+@len[iter*3+2]
-    end
-    tmpl -= @len[-1]  
-    poly1 = []
-    poly2 = []
-    t1 = Trans::new(DTrans::M90) #mirroy along y axis
-    t2 = Trans::new(tmpl+@len[-1]-@len[0],0.0)  
-    t3 = Trans::new()   
-    pts = [DPoint::new(-@cpw_radius-@len[0],@cpw_radius),
-           DPoint::new(-@cpw_radius-@len[0],0.0),
-           DPoint::new(tmpl+@cpw_radius+@len[-1],0.0),
-           DPoint::new(tmpl+@cpw_radius+@len[-1],@cpw_radius)]
-    pts = round_corners(pts,@cpw_radius,2.0)
-    wg = Waveguide::new(pts,@cpw_width,0,0)
-    poly1.push(wg.poly)
-    wg = Waveguide::new(pts,@cpw_width+@cpw_gap*2.0,0,0)
-    poly2.push(wg.poly)
-    
-    taperL = 30.0/@dbu
-    proble_w = 90.0/@dbu
-    pts = [DPoint::new(-@cpw_radius-@len[0],@cpw_radius),
-           DPoint::new(-@cpw_radius-@len[0],@cpw_radius+taperL)]
-    taper = Taper::new(pts,@cpw_width,proble_w)    
-    poly = taper.poly
-    poly1.push(poly)
-    poly1.push(poly.transformed(t1).transformed(t2).transformed(t3))
-    taper = Taper::new(pts,@cpw_width+@cpw_gap*2.0,proble_w+@cpw_gap*2.0)
-    poly = taper.poly
-    poly2.push(poly)
-    poly2.push(poly.transformed(t1).transformed(t2).transformed(t3))
-    
-    
-    probe_L = 80.0/@dbu
-    pts = [DPoint::new(-@cpw_radius-@len[0],@cpw_radius+taperL),
-           DPoint::new(-@cpw_radius-@len[0],@cpw_radius+taperL+probe_L)]    
-    wg = Waveguide::new(pts,proble_w)    
-    poly = wg.poly
-    poly1.push(poly)         
-    poly1.push(poly.transformed(t1).transformed(t2).transformed(t3))
-    wg = Waveguide::new(pts,proble_w+@cpw_gap*2.0)
-    poly = wg.poly
-    poly2.push(poly)
-    poly2.push(poly.transformed(t1).transformed(t2).transformed(t3))
-    nprobe_w = 90.0/@dbu
-    tmp_w = -50.0/@dbu #the below n probe width
-    pts = [DPoint::new(-@cpw_radius-proble_w/2.0-@cpw_gap-nprobe_w-@len[0],@cpw_radius+taperL+probe_L),
-           DPoint::new(-@cpw_radius-proble_w/2.0-@cpw_gap-nprobe_w-@len[0],tmp_w),
-           DPoint::new(tmpl+@cpw_radius+proble_w/2.0+@cpw_gap+nprobe_w+@len[-1],tmp_w),
-           DPoint::new(tmpl+@cpw_radius+proble_w/2.0+@cpw_gap+nprobe_w+@len[-1],(@cpw_radius+taperL+probe_L))]
-    poly = Polygon::from_dpoly(DPolygon::new(pts))
-    rpoly = poly.round_corners(0.0/@dbu,5.0/@dbu,128)
-    ep = RBA::EdgeProcessor::new()
-    out = ep.boolean_p2p(poly2,[rpoly],RBA::EdgeProcessor::ModeBNotA,false, false)
-    out.each {|p| shape.insert(p)}   
-    poly1.each {|p| shape.insert(p)}     
-  end  
   def ports
     return @ports
   end
+end
+
+def divL(x,activeL,num) 
+  lens = Array.new()
+  for iter in 0..(num-3)
+      lens =lens + [x[iter]]+[activeL]+[x[iter+1]];
+  end
+  lens = lens+[x[num-2]]+[activeL]+[x[num-1]];
 end
 
 if __FILE__ == $0
@@ -331,10 +286,54 @@ if __FILE__ == $0
   dbu = 0.001
   layout.dbu = dbu
   # create a cell
-  cell = layout.create_cell("PZT_Modulator")  
+  cell = layout.create_cell("PZT_Modulator_40G_L4mm")  
   pzt = PZT_Modulator.new()
+  len = [0.0,4000.0,0.0]
+  pzt.len = len.collect{|l| l/dbu}
   pzt.shapes(cell)
-    
+
+  cell = layout.create_cell("PZT_Modulator_55G_L7mm")  
+  pzt = PZT_Modulator.new()
+  plen = [0,0,0,0,0,50,250,450,450,550,350,50,150,250,250,150,50,0,0,0,0]
+  activeL = 4000.0/(plen.length-1.0)
+  len = divL(plen,activeL,21) 
+  pzt.len = len.collect{|l| l/dbu}
+  pzt.shapes(cell)
+ 
+  cell = layout.create_cell("PZT_Modulator_70G_L8mm")  
+  pzt = PZT_Modulator.new()
+  plen = [0,0,0,0,0,0,0,0,100,0,100,100,0,100,100,0,150,100,250,150,250,250,200,
+          300,400,150,200,100,0,0,0,0,0,100,0,100,100,200,100,100,0,100,0,0,0,0,0,0,100,0,0]
+  activeL = 4000.0/(plen.length-1.0)
+  len = divL(plen,activeL,51) 
+  pzt.len = len.collect{|l| l/dbu}
+  pzt.shapes(cell)
+
+  cell = layout.create_cell("PZT_Modulator_80G_L9.5mm")  
+  pzt = PZT_Modulator.new()
+  plen = [0.0,0.0,0.0,0.0,24.9,65.4,32.7,0.0,0.0,20.8,0.0,0.0,44.9,30.1,61.9,0.0,0.0,20.2,32.9,
+          62.4,81.2,92.9,68.5,49.7,112.6,55.4,67.8,123.7,64.7,43.8,101.3,46.9,53.5,77.9,75.1,55.8,
+          72.8,67.3,130.3,59.2,119.3,147.2,79.2,86.3,101.6,136.9,174.5,127.9,122.1,160.9,64.7,113.6,
+          74.4,72.6,56.7,85.4,57.8,56.5,106.5,54.5,102.1,20.7,30.0,83.3,49.3,70.3,78.9,0.0,67.0,82.8,
+          29.4,43.0,52.2,31.9,34.2,67.7,28.4,54.4,46.7,48.5,38.0,0.0,79.0,20.4,33.9,50.2,26.2,0.0,64.0,
+          0.0,38.2,0.0,48.0,0.0,20.2,0.0,0.0,0.0,0.0,0.0,0.0]
+  activeL = 4000.0/(plen.length-1.0)
+  len = divL(plen,activeL,101) 
+  pzt.len = len.collect{|l| l/dbu}
+  pzt.shapes(cell)
+
+  cell = layout.create_cell("PZT_Modulator_90G_L10mm")  
+  pzt = PZT_Modulator.new()
+  plen = [25.8,40.0,0.0,0.0,49.1,0.0,26.9,40.4,60.2,26.5,40.6,0.0,91.2,34.6,47.2,81.5,0.0,29.8,69.5,112.5,
+          101.6,79.1,87.8,144.7,79.7,104.2,89.1,85.3,105.1,117.1,57.9,135.2,68.2,107.0,35.3,124.4,120.1,92.7,
+          91.4,71.8,79.5,45.8,48.1,71.1,81.9,91.9,140.9,121.5,97.2,178.7,97.4,142.2,50.8,117.1,70.8,146.7,79.2,
+          60.5,98.1,55.8,95.3,66.3,23.6,106.8,79.8,0.0,67.9,32.4,28.2,0.0,27.0,72.0,121.6,29.7,102.9,62.6,38.3,
+          0.0,28.1,0.0,35.6,0.0,0.0,38.3,31.0,68.7,29.0,0.0,0.0,63.9,0.0,22.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+  activeL = 4000.0/(plen.length-1.0)
+  len = divL(plen,activeL,101) 
+  pzt.len = len.collect{|l| l/dbu}
+  pzt.shapes(cell)
+            
   layout_view.select_cell(cell.cell_index, 0)
   layout_view.add_missing_layers
   layout_view.zoom_fit
