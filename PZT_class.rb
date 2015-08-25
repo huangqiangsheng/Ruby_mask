@@ -12,14 +12,14 @@ class PZT_Modulator
                 :dbu,:len
                 
   def initialize(wsin = 0.7,
-                 wmmi = 3.0,
-                 lmmi = 4.0,
-                 radius = 15.0,
+                 wmmi = 4.0,
+                 lmmi = 11.3,
+                 radius = 50.0,
                  taperL = 10.0,
-                 gap = 1.0,
-                 wmmi_in = 1.0,
+                 gap = 0.6,
+                 wmmi_in = 1.7,
                  spacing = 15.0,
-                 sbend_len = 20.0,
+                 sbend_len = 50.0,
                  cpw_pgap = 9.0,
                  cpw_pwidth = 8.0,
                  wground = 100.0,
@@ -286,21 +286,21 @@ if __FILE__ == $0
   dbu = 0.001
   layout.dbu = dbu
   # create a cell
-  cell = layout.create_cell("PZT_Modulator_40G_L4mm")  
+  cell = layout.create_cell("PZT_Modulator_40G_L4mm_w8_gap9")  
   pzt = PZT_Modulator.new()
   len = [0.0,4000.0,0.0]
   pzt.len = len.collect{|l| l/dbu}
   pzt.shapes(cell)
-
-  cell = layout.create_cell("PZT_Modulator_55G_L7mm")  
+if false
+  cell = layout.create_cell("PZT_Modulator_55G_L7mm_w8_gap9")  
   pzt = PZT_Modulator.new()
   plen = [0,0,0,0,0,50,250,450,450,550,350,50,150,250,250,150,50,0,0,0,0]
   activeL = 4000.0/(plen.length-1.0)
   len = divL(plen,activeL,21) 
   pzt.len = len.collect{|l| l/dbu}
   pzt.shapes(cell)
- 
-  cell = layout.create_cell("PZT_Modulator_70G_L8mm")  
+end
+  cell = layout.create_cell("PZT_Modulator_70G_L8mm_w8_gap9")  
   pzt = PZT_Modulator.new()
   plen = [0,0,0,0,0,0,0,0,100,0,100,100,0,100,100,0,150,100,250,150,250,250,200,
           300,400,150,200,100,0,0,0,0,0,100,0,100,100,200,100,100,0,100,0,0,0,0,0,0,100,0,0]
@@ -308,8 +308,8 @@ if __FILE__ == $0
   len = divL(plen,activeL,51) 
   pzt.len = len.collect{|l| l/dbu}
   pzt.shapes(cell)
-
-  cell = layout.create_cell("PZT_Modulator_80G_L9.5mm")  
+if(false)
+  cell = layout.create_cell("PZT_Modulator_80G_L9.5mm_w8_gap9")  
   pzt = PZT_Modulator.new()
   plen = [0.0,0.0,0.0,0.0,24.9,65.4,32.7,0.0,0.0,20.8,0.0,0.0,44.9,30.1,61.9,0.0,0.0,20.2,32.9,
           62.4,81.2,92.9,68.5,49.7,112.6,55.4,67.8,123.7,64.7,43.8,101.3,46.9,53.5,77.9,75.1,55.8,
@@ -321,8 +321,8 @@ if __FILE__ == $0
   len = divL(plen,activeL,101) 
   pzt.len = len.collect{|l| l/dbu}
   pzt.shapes(cell)
-
-  cell = layout.create_cell("PZT_Modulator_90G_L10mm")  
+end
+  cell = layout.create_cell("PZT_Modulator_90G_L10mm_w8_gap9")  
   pzt = PZT_Modulator.new()
   plen = [25.8,40.0,0.0,0.0,49.1,0.0,26.9,40.4,60.2,26.5,40.6,0.0,91.2,34.6,47.2,81.5,0.0,29.8,69.5,112.5,
           101.6,79.1,87.8,144.7,79.7,104.2,89.1,85.3,105.1,117.1,57.9,135.2,68.2,107.0,35.3,124.4,120.1,92.7,
@@ -334,6 +334,21 @@ if __FILE__ == $0
   pzt.len = len.collect{|l| l/dbu}
   pzt.shapes(cell)
             
+if(false)
+  cell = layout.create_cell("PZT_Modulator_90G_L9mm_w5_gap6")  
+  pzt = PZT_Modulator.new()
+  plen = [0.0,30.0,0.0,20.0,30.0,40.0,10.0,0.0,0.0,20.0,10.0,20.0,70.0,30.0,20.0,0.0,50.0,20.0,110.0,40.0,20.0,
+          130.0,50.0,60.0,70.0,80.0,60.0,70.0,20.0,90.0,80.0,80.0,40.0,120.0,70.0,60.0,60.0,130.0,60.0,80.0,40.0,
+          90.0,70.0,10.0,30.0,150.0,120.0,140.0,150.0,80.0,70.0,110.0,140.0,0.0,110.0,110.0,70.0,70.0,60.0,70.0,20.0,
+          40.0,30.0,40.0,20.0,0.0,60.0,40.0,40.0,80.0,40.0,30.0,70.0,60.0,10.0,10.0,30.0,60.0,50.0,20.0,30.0,50.0,20.0,
+          90.0,0.0,40.0,20.0,0.0,40.0,40.0,40.0,40.0,40.0,0.0,20.0,20.0,50.0,0.0,0.0,10.0,80.0]
+  activeL = 4000.0/(plen.length-1.0)
+  len = divL(plen,activeL,101) 
+  pzt.len = len.collect{|l| l/dbu}
+  pzt.cpw_pwidth = 5.0/dbu
+  pzt.cpw_pgap = 6.0/dbu
+  pzt.shapes(cell)
+end  
   layout_view.select_cell(cell.cell_index, 0)
   layout_view.add_missing_layers
   layout_view.zoom_fit
